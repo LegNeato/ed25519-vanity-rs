@@ -2,6 +2,7 @@
 
 extern crate alloc;
 
+ use alloc::vec::Vec;
 use sha2::{Sha256, Digest};
 mod sha512;
 mod base58;
