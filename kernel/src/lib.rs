@@ -10,7 +10,6 @@ mod xorshiro;
 
 fn sha512_hash(input: &[u8]) -> Vec<u8> {
     let mut hasher = Sha256::new();
-    let mut hasher = Hasher::new();
     hasher.update(input);
     hasher.finalize().to_vec()
 }
