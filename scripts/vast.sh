@@ -1,7 +1,7 @@
 #!/bin/bash
 
-PORT=35456
-HOST=ssh3.vast.ai
+PORT=37335
+HOST=ssh2.vast.ai
 USER=root
 
 # generate key
@@ -48,7 +48,7 @@ EOF
 ssh -o StrictHostKeyChecking=no -p $PORT $USER@$HOST <<'EOF'
 if [[ ! -d ed25519-vanity-rs ]]
 then
-  GIT_SSH_COMMAND="ssh -o StrictHostKeyChecking=no" git clone git@github.com:brandonros/ed25519-vanity-rs.git
+  GIT_SSH_COMMAND="ssh -o StrictHostKeyChecking=no" git clone git@github.com:LegNeato/ed25519-vanity-rs.git
 fi
 pushd ed25519-vanity-rs
 git fetch
