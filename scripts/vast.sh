@@ -1,6 +1,6 @@
 #!/bin/bash
 
-PORT=24163
+PORT=10815
 HOST=ssh3.vast.ai
 USER=root
 
@@ -62,7 +62,7 @@ git reset --hard origin/master
 
 # build
 . $HOME/.cargo/env
-cargo build --release
+RUSTFLAGS="--emit=llvm-ir" RUST_LOG=trace RUSTC_LOG=trace cargo build --release
 EOF
 
 # run
