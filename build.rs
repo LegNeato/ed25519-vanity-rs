@@ -27,6 +27,7 @@ fn main() {
     let out_path = path::PathBuf::from(env::var("OUT_DIR").unwrap());
     CudaBuilder::new("kernel")
         .copy_to(out_path.join("kernel.ptx"))
+        .release(false)
         .build()
         .unwrap();
 }

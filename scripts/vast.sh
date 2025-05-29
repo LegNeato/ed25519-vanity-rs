@@ -62,7 +62,8 @@ git reset --hard origin/master
 
 # build
 . $HOME/.cargo/env
-RUSTFLAGS="--emit=llvm-ir" RUST_LOG=trace RUSTC_LOG=trace cargo build --release
+cargo clean
+RUSTFLAGS="--emit=llvm-ir" RUSTC_LOG="rustc_codegen_nvvm=trace" cargo build --release
 EOF
 
 # run
