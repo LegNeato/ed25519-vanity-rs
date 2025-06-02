@@ -7,7 +7,6 @@ mod base58;
 mod xorshiro;
 
 fn sha512_hash(input: &[u8]) -> [u8; 64] {
-    use sha2::{Digest, Sha512};
     let mut hasher = Sha512::new();
     hasher.update(input);
     hasher.finalize().into()
