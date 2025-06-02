@@ -3,29 +3,11 @@
 extern crate alloc;
 
 use sha2::{Digest, Sha512};
-mod base58;
-mod xorshiro;
 
 fn sha512_hash(input: &[u8]) -> [u8; 64] {
     let mut hasher = Sha512::new();
     hasher.update(input);
     hasher.finalize().into()
-}
-
-fn ed25519_clamp(hashed_private_key_bytes: &mut [u8]) {
-    hashed_private_key_bytes[0] &= 248;
-    hashed_private_key_bytes[31] &= 63;
-    hashed_private_key_bytes[31] |= 64;
-}
-
-fn ed25519_derive_public_key(hashed_private_key_bytes: &[u8]) -> [u8; 32] {
-    let mut input = [0u8; 32];
-    input.copy_from_slice(&hashed_private_key_bytes[0..32]);
-    let scalar = curve25519_dalek::Scalar::from_bytes_mod_order(input);
-    let point = curve25519_dalek::constants::ED25519_BASEPOINT_TABLE * &scalar;
-    let compressed_point = point.compress();
-    let public_key_bytes = compressed_point.to_bytes();
-    public_key_bytes
 }
 
 #[cuda_std::kernel]
@@ -45,59 +27,11 @@ pub unsafe fn find_vanity_private_key(
     // generate random input for private key from thread index and rng seed
     let thread_idx = cuda_std::thread::index() as usize;
 
-    let private_key = xorshiro::generate_random_private_key(thread_idx, rng_seed);
-
     // sha512 hash private key
-    let mut hashed_private_key_bytes = sha512_hash(&private_key);
+    let mut hashed_private_key_bytes = sha512_hash(&[1,2,3]);
 
     // take first 32 bytes of hashed private key
     let mut hashed_private_key_bytes = &mut hashed_private_key_bytes[0..32];
-
-    // apply ed25519 clamping to hashed private key
-    ed25519_clamp(&mut hashed_private_key_bytes);
-
-    // calculate public key from hashed private key with ed25519 point multiplication
-    let public_key_bytes = ed25519_derive_public_key(&hashed_private_key_bytes);
-
-    // bs58 encode public key
-    let mut bs58_encoded_public_key = [0u8; 64];
-    let _encoded_len = base58::encode_into_limbs(&public_key_bytes, &mut bs58_encoded_public_key);
-
-    // check if public key starts with vanity prefix
-    let vanity_prefix =
-        unsafe { core::slice::from_raw_parts(vanity_prefix_ptr, vanity_prefix_len as usize) };
-    let mut matches = true;
-    for i in 0..vanity_prefix_len {
-        if bs58_encoded_public_key[i] != vanity_prefix[i] {
-            matches = false;
-            break;
-        }
-    }
-
-    // if match, copy found match to host
-    if matches {
-        let found_matches_slice =
-            unsafe { core::slice::from_raw_parts_mut(found_matches_slice_ptr, 1) };
-        let found_private_key =
-            unsafe { core::slice::from_raw_parts_mut(found_private_key_ptr, 32) };
-        let found_public_key = unsafe { core::slice::from_raw_parts_mut(found_public_key_ptr, 32) };
-        let found_bs58_encoded_public_key =
-            unsafe { core::slice::from_raw_parts_mut(found_bs58_encoded_public_key_ptr, 64) };
-        let found_thread_idx_slice =
-            unsafe { core::slice::from_raw_parts_mut(found_thread_idx_slice_ptr, 1) };
-        let found_matches = &mut found_matches_slice[0];
-
-        // if first find, copy results to host
-        if found_matches.load(core::sync::atomic::Ordering::SeqCst) == 0.0 {
-            found_private_key.copy_from_slice(&private_key[0..32]);
-            found_public_key.copy_from_slice(&public_key_bytes[0..32]);
-            found_bs58_encoded_public_key.copy_from_slice(&bs58_encoded_public_key[0..64]);
-            found_thread_idx_slice[0] = thread_idx as u32;
-        }
-
-        found_matches.fetch_add(1.0, core::sync::atomic::Ordering::SeqCst);
-        cuda_std::atomic::mid::device_thread_fence(core::sync::atomic::Ordering::SeqCst);
-    }
 }
 
 #[cfg(test)]
